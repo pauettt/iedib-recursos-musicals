@@ -1,1 +1,400 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Explora el gran pentagrama, l'endecagrama i el Do central amb un teclat musical interactiu.">
+<title>Endecagrama · Del pentagrama al teclat</title>
+<style>
+:root{color-scheme:light;--ink:#20283c;--muted:#586078;--accent:#7042ac;--soft:#f2eafa;--line:#dcdde6}
+*{box-sizing:border-box}
+body{margin:0;background:#f7f6fa;color:var(--ink);font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1000px;margin:auto;padding:32px 20px 40px}
+.eyebrow{color:var(--accent);font-weight:750;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.15;margin:10px 0 16px;letter-spacing:-.035em}
+.intro{max-width:750px;color:var(--muted);margin-bottom:24px}
+.card{background:white;border:1px solid var(--line);border-radius:20px;padding:22px;margin-top:18px}
+.toolbar,.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar{justify-content:space-between}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+button,select{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);border-radius:10px;background:white;color:var(--ink);padding:9px 14px;min-height:44px}
+button:hover{background:var(--soft)}
+button[aria-pressed="true"]{background:var(--accent);color:white;border-color:var(--accent)}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #126ac2;outline-offset:3px}
+button:disabled{cursor:default;opacity:.45}
+label{display:inline-flex;align-items:center;gap:7px;font-size:.9rem}
+input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent)}
+select{max-width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}
+.score-scroll{overflow-x:auto;margin-top:10px}
+#score{display:block;width:100%;min-width:580px;height:auto}
+.explanation{margin:0;background:var(--soft);padding:12px 16px;border-radius:12px;font-size:.95rem;min-height:72px}
+.readout{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:16px 0}
+#noteName{font-size:1.8rem;font-weight:750;color:var(--accent)}
+#noteDetail{color:var(--muted);font-size:.95rem}
+h2{font-size:1.15rem;margin:0 0 6px}
+.hint{color:var(--muted);font-size:.9rem;margin:8px 0 14px}
+.keyboard-scroll{overflow-x:auto;padding:5px 4px 12px}
+#keyboard{position:relative;height:180px;min-width:630px;isolation:isolate}
+.key{position:absolute;top:0;padding:0;border-radius:0 0 7px 7px;line-height:1.2;touch-action:manipulation}
+.white{height:174px;background:linear-gradient(white,#f5f4f8);border:1px solid #a9acba;z-index:1}
+.black{height:106px;background:#262b3b;color:white;border:1px solid #151a28;z-index:2;box-shadow:0 3px 3px #0003}
+.black:hover{background:#424a60}
+.key span{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:.78rem}
+.black span{font-size:.65rem}
+.white.central{border-bottom:5px solid var(--accent)}
+.key[aria-pressed="true"]{background:var(--accent);color:white;border-color:#4c277d;box-shadow:inset 0 3px 6px #0003}
+.key:focus-visible{z-index:3;outline-offset:-4px}
+.actions{margin-top:12px}
+.footer{font-size:.82rem;color:var(--muted);margin:22px 2px 0}
+a{color:var(--accent)}
+@media(max-width:600px){main{padding:22px 12px}.card{padding:14px}.toolbar{align-items:flex-start}.explanation{min-height:100px}}
+@media(prefers-reduced-motion:no-preference){button{transition:background .15s}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Explora · Escolta · Connecta</div>
+    <h1>Del pentagrama al teclat</h1>
+    <p class="intro">Toca una tecla i segueix el so fins a la seva posició a la partitura. Descobreix com el <strong>Do central (Do3)</strong> connecta la clau de Fa amb la clau de Sol.</p>
+  </header>
+  <section class="card" aria-label="Representació musical">
+    <div class="toolbar">
+      <div class="modes" role="group" aria-label="Tipus de visualització">
+        <button id="grand" type="button" aria-pressed="true">Gran pentagrama</button>
+        <button id="eleven" type="button" aria-pressed="false">Endecagrama</button>
+      </div>
+      <label><input id="names" type="checkbox" checked> Noms de les línies</label>
+    </div>
+    <div class="score-scroll" tabindex="0" role="region" aria-label="Partitura; desplaça horitzontalment si cal">
+      <svg id="score" viewBox="0 0 820 350" role="img" aria-labelledby="scoreTitle scoreDesc">
+        <title id="scoreTitle">Gran pentagrama</title>
+        <desc id="scoreDesc">Do3, Do central, en les claus de Sol i de Fa.</desc>
+        <g id="drawing"></g>
+      </svg>
+    </div>
+    <p id="explanation" class="explanation"></p>
+  </section>
+  <section class="card" aria-labelledby="keyboardTitle">
+    <div class="toolbar">
+      <h2 id="keyboardTitle">Prova-ho al teclat</h2>
+      <label><input id="sound" type="checkbox" checked> So activat</label>
+    </div>
+    <div class="readout" role="status" aria-live="polite" aria-atomic="true">
+      <span id="noteName">Do3</span><span id="noteDetail"></span>
+    </div>
+    <div class="keyboard-scroll" tabindex="0" role="region" aria-label="Teclat de Do2 a Do4; desplaça horitzontalment si cal">
+      <div id="keyboard" role="group" aria-label="Tecles del piano"></div>
+    </div>
+    <p class="hint">Clica o toca una tecla. Amb el focus al teclat, usa ← i → per canviar de nota; Retorn o espai per repetir-la. Les tecles negres tenen dos noms equivalents.</p>
+    <div class="actions">
+      <button id="previous" type="button" aria-label="Baixa un semitò">← Nota anterior</button>
+      <button id="center" type="button">Torna al Do3</button>
+      <button id="next" type="button" aria-label="Puja un semitò">Nota següent →</button>
+      <label>Tecles negres
+        <select id="spelling"><option value="sharp">Amb sostinguts (♯)</option><option value="flat">Amb bemolls (♭)</option></select>
+      </label>
+    </div>
+    <p id="audioMessage" class="hint" role="status"></p>
+  </section>
+  <p class="footer">En aquest recurs, el Do central s’anomena <strong>Do3</strong> (261,63 Hz). En la nomenclatura científica internacional és C4. El so és sintetitzat. L’endecagrama és un esquema didàctic d’onze línies; les partitures habituals utilitzen dos pentagrames de cinc línies.</p>
+  <p class="footer">Referència: <a href="https://www.musictheory.net/lessons/10" target="_blank" rel="noopener noreferrer">Pentagrama, claus i línies addicionals · musictheory.net</a>.</p>
+  <noscript><p>Activa JavaScript al navegador per utilitzar el teclat i veure la partitura interactiva.</p></noscript>
+</main>
+<script>
+"use strict";
+(() => {
+  const $ = id => document.getElementById(id);
+  const NS = "http://www.w3.org/2000/svg";
+  const names = ["Do","Re","Mi","Fa","Sol","La","Si"];
+  const sharpLetters = [0,0,1,1,2,3,3,4,4,5,5,6];
+  const flatLetters = [0,1,1,2,2,3,4,4,5,5,6,6];
+  const blackPC = new Set([1,3,6,8,10]);
+  const keys = new Map();
+  const LOW = 48, HIGH = 72, MIDDLE = 60;
+  let selected = MIDDLE, mode = "grand", context, voice;
 
+  // MIDI 60 = Do3 aquí. L'altura gràfica depèn de la lletra, no del semitò.
+  function pitch(midi, spelling = $("spelling").value) {
+    const pc = midi % 12, altered = blackPC.has(pc);
+    const letter = (spelling === "flat" ? flatLetters : sharpLetters)[pc];
+    const octave = Math.floor(midi / 12) - 2;
+    const accidental = altered ? (spelling === "flat" ? "♭" : "♯") : "";
+    return {
+      label:names[letter]+accidental+octave,
+      step:(octave-3)*7+letter,
+      accidental,
+      frequency:440 * 2 ** ((midi-69)/12)
+    };
+  }
+
+  function svg(tag, attrs, text) {
+    const el = document.createElementNS(NS, tag);
+    for (const [key,value] of Object.entries(attrs)) el.setAttribute(key,value);
+    if (text !== undefined) el.textContent = text;
+    $("drawing").append(el);
+    return el;
+  }
+
+  function line(x1,y1,x2,y2,color="#667085",width=1.4) {
+    return svg("line",{x1,y1,x2,y2,stroke:color,"stroke-width":width});
+  }
+
+  function text(x,y,value,attrs={}) {
+    return svg("text",{x,y,fill:"#586078","font-size":14,...attrs},value);
+  }
+
+  function noteY(step, clef) {
+    return 180 - step*8 + (mode === "eleven" ? 0 : clef === "treble" ? -32 : 32);
+  }
+
+  // Claus vectorials integrades: no depenen de cap font musical externa.
+  function clefs() {
+    const g = noteY(4,"treble"), f = noteY(-4,"bass");
+    svg("path",{
+      d:"M 4 25 C -18 20 -22 -3 -6 -13 C 11 -25 28 -8 17 5 C 8 16 -10 10 -8 -2 C -7 -10 6 -12 9 -3 M 4 25 C 0 6 -3 -16 -5 -35 C -9 -57 0 -67 6 -69 C 20 -53 7 -35 -6 -24 C -31 -4 -24 24 -2 28 C 17 32 25 16 18 2 M 4 25 L 8 43 C 12 60 -9 62 -11 49",
+      transform:`translate(111 ${g}) scale(.75)`,
+      fill:"none",
+      stroke:"#20283c",
+      "stroke-width":3.5,
+      "stroke-linecap":"round",
+      "stroke-linejoin":"round"
+    });
+    svg("circle",{cx:104.25,cy:g+36.75,r:3.375,fill:"#20283c"});
+    svg("path",{
+      d:"M -14 1 C -14 -17 13 -20 16 -3 C 20 15 1 29 -17 36 C -3 24 8 13 7 0 C 6 -10 -5 -10 -10 -3",
+      transform:`translate(112 ${f})`,
+      fill:"#20283c"
+    });
+    svg("circle",{cx:100,cy:f,r:5,fill:"#20283c"});
+    for (const dy of [-8,8]) {
+      svg("circle",{cx:138,cy:f+dy,r:3.1,fill:"#20283c"});
+    }
+  }
+
+  function drawNote(p, clef, x) {
+    const y = noteY(p.step,clef);
+    const bottom = noteY(clef === "treble" ? 2 : -10,clef);
+    const top = bottom - 64;
+    if (mode === "grand") {
+      for(let ly=bottom+16;ly<=y;ly+=16) {
+        line(x-20,ly,x+20,ly,"#20283c",2);
+      }
+      for(let ly=top-16;ly>=y;ly-=16) {
+        line(x-20,ly,x+20,ly,"#20283c",2);
+      }
+    }
+    svg("ellipse",{
+      cx:x,cy:y,rx:12,ry:8,
+      transform:`rotate(-18 ${x} ${y})`,
+      fill:"#7042ac"
+    });
+    if(p.accidental) {
+      text(x-36,y+7,p.accidental,{"font-size":26,fill:"#7042ac"});
+    }
+    text(x+29,y+5,p.label,{
+      "font-size":17,
+      "font-weight":700,
+      fill:"#7042ac",
+      stroke:"white",
+      "stroke-width":4,
+      "paint-order":"stroke"
+    });
+  }
+
+  function render() {
+    const p = pitch(selected), isEleven = mode === "eleven";
+    $("drawing").replaceChildren();
+    const top = noteY(10,"treble"), bottom = noteY(-10,"bass");
+    line(72,top,72,bottom,"#20283c",2);
+
+    // Claudàtor que uneix els dos pentagrames.
+    svg("path",{
+      d:`M 64 ${top} H 54 V ${bottom} H 64`,
+      fill:"none",
+      stroke:"#20283c",
+      "stroke-width":3
+    });
+
+    for (const [clef,steps,labels] of [
+      ["treble",[2,4,6,8,10],["Mi3","Sol3","Si3","Re4","Fa4"]],
+      ["bass",[-10,-8,-6,-4,-2],["Sol1","Si1","Re2","Fa2","La2"]]
+    ]) {
+      steps.forEach((step,i) => {
+        const y = noteY(step,clef);
+        line(72,y,690,y);
+        if($("names").checked) text(710,y+5,labels[i]);
+      });
+    }
+
+    if (isEleven) {
+      line(72,180,690,180,"#7042ac",2);
+      if($("names").checked) {
+        text(710,185,"Do3",{fill:"#7042ac","font-weight":700});
+      }
+    }
+
+    clefs();
+    text(170,top-18,"Clau de Sol · 2a línia",{"font-size":13});
+    text(170,bottom+27,"Clau de Fa · 4a línia",{"font-size":13});
+
+    if (selected === MIDDLE && !isEleven) {
+      drawNote(p,"treble",350);
+      drawNote(p,"bass",350);
+      text(435,185,"El mateix Do3",{"font-size":15,fill:"#7042ac"});
+    } else {
+      drawNote(p,selected < MIDDLE ? "bass" : "treble",350);
+    }
+
+    $("grand").setAttribute("aria-pressed",!isEleven);
+    $("eleven").setAttribute("aria-pressed",isEleven);
+    $("scoreTitle").textContent = isEleven
+      ? "Endecagrama d’onze línies"
+      : "Gran pentagrama";
+    $("scoreDesc").textContent = `${p.label}. ${
+      selected === MIDDLE && !isEleven
+        ? "El mateix Do central representat en les dues claus."
+        : "Nota situada a la seva altura musical."
+    }`;
+
+    $("explanation").textContent = isEleven
+      ? "Onze línies, un mapa continu: el Do3 ocupa la línia central. En tornar al gran pentagrama, aquesta línia desapareix i els dos grups de cinc línies se separen."
+      : "Dos pentagrames de cinc línies. El Do3 s’escriu a la primera línia addicional per davall de la clau de Sol o per damunt de la clau de Fa. Les dues posicions representen la mateixa tecla i el mateix so.";
+
+    $("noteName").textContent = p.label;
+    const equivalent = p.accidental
+      ? ` · També ${pitch(selected,$("spelling").value === "sharp" ? "flat" : "sharp").label}`
+      : "";
+    $("noteDetail").textContent =
+      `${selected === MIDDLE ? "Do central · " : ""}${
+        p.frequency.toLocaleString("ca-ES",{
+          minimumFractionDigits:2,
+          maximumFractionDigits:2
+        })
+      } Hz${equivalent}`;
+
+    for(const [midi,key] of keys) {
+      key.setAttribute("aria-pressed",midi === selected);
+      key.tabIndex = midi === selected ? 0 : -1;
+      key.setAttribute(
+        "aria-label",
+        pitch(midi).label+(midi === MIDDLE ? ", Do central" : "")
+      );
+      key.firstChild.textContent = pitch(midi).label;
+    }
+
+    $("previous").disabled = selected === LOW;
+    $("next").disabled = selected === HIGH;
+  }
+
+  function stopVoice() {
+    if(voice) {
+      try{voice.stop();}catch{}
+      voice = undefined;
+    }
+  }
+
+  async function play(midi) {
+    if(!$("sound").checked) return;
+    try {
+      const Audio = window.AudioContext || window.webkitAudioContext;
+      if(!Audio) throw new Error("Àudio no disponible");
+      context ||= new Audio();
+      stopVoice();
+
+      // Es crea abans de reprendre el context per evitar notes endarrerides.
+      const osc = context.createOscillator(), gain = context.createGain();
+      voice = osc;
+      osc.type = "triangle";
+      osc.frequency.value = pitch(midi).frequency;
+      const now = context.currentTime;
+      gain.gain.setValueAtTime(0,now);
+      gain.gain.linearRampToValueAtTime(.18,now+.015);
+      gain.gain.exponentialRampToValueAtTime(.001,now+.85);
+      osc.connect(gain);
+      gain.connect(context.destination);
+      osc.onended = () => {
+        osc.disconnect();
+        gain.disconnect();
+        if(voice === osc) voice = undefined;
+      };
+      osc.start(now);
+      osc.stop(now+.9);
+      await context.resume();
+      $("audioMessage").textContent = context.state === "running"
+        ? ""
+        : "El navegador ha pausat el so. Torna a tocar una tecla.";
+    } catch {
+      $("audioMessage").textContent =
+        "No s’ha pogut activar el so. Pots continuar explorant les notes i les seves posicions.";
+    }
+  }
+
+  function select(midi, focus=false) {
+    selected = Math.max(LOW,Math.min(HIGH,midi));
+    render();
+    if(focus) keys.get(selected).focus({preventScroll:true});
+    void play(selected);
+  }
+
+  const whiteCount = 15;
+  let whiteIndex = 0;
+
+  for(let midi=LOW;midi<=HIGH;midi++) {
+    const black = blackPC.has(midi%12);
+    const key = document.createElement("button");
+    key.type = "button";
+    key.className =
+      `key ${black ? "black" : "white"}${midi === MIDDLE ? " central" : ""}`;
+    key.style.left =
+      `${(black ? whiteIndex-.31 : whiteIndex)/whiteCount*100}%`;
+    key.style.width =
+      `${(black ? .62 : 1)/whiteCount*100}%`;
+    key.dataset.midi = midi;
+    key.append(document.createElement("span"));
+    key.addEventListener("click",() => select(midi));
+    key.addEventListener("keydown",event => {
+      const target =
+        event.key === "ArrowLeft" ? midi-1 :
+        event.key === "ArrowRight" ? midi+1 :
+        event.key === "Home" ? LOW :
+        event.key === "End" ? HIGH : null;
+      if(target !== null) {
+        event.preventDefault();
+        select(target,true);
+        keys.get(selected).scrollIntoView({
+          block:"nearest",
+          inline:"nearest"
+        });
+      }
+    });
+    $("keyboard").append(key);
+    keys.set(midi,key);
+    if(!black) whiteIndex++;
+  }
+
+  for(const id of ["grand","eleven"]) {
+    $(id).addEventListener("click",() => {
+      mode=id;
+      render();
+    });
+  }
+
+  $("names").addEventListener("change",render);
+  $("spelling").addEventListener("change",render);
+  $("sound").addEventListener("change",() => {
+    if(!$("sound").checked) stopVoice();
+    $("audioMessage").textContent="";
+  });
+  $("previous").addEventListener("click",() => select(selected-1));
+  $("next").addEventListener("click",() => select(selected+1));
+  $("center").addEventListener("click",() => select(MIDDLE));
+  document.addEventListener("visibilitychange",() => {
+    if(document.hidden) stopVoice();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
